@@ -5,9 +5,9 @@ name: Auto Edit and Release
 # Controls when the workflow will run
 on:
   workflow_dispatch:
-  # push:
-  #     branches:
-  #       - master
+  push:
+    branches:
+      - master
   schedule:
     - cron: '0 17 * * *'
 
@@ -53,7 +53,7 @@ jobs:
           echo "filtered_asset=$filtered_assets" >> "$GITHUB_ENV"
           
           echo "Triggered workflow for external release $tag_name"
-          
+
       - name: Compare with previous release
         id: compare_release
         run: |
@@ -73,13 +73,13 @@ jobs:
             echo "No new release detected. Exiting..."
             echo "is_new_release=false" >> "$GITHUB_ENV"
           fi
-          
+
       - name: Install 7z tool
         if: env.is_new_release == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y p7zip-full  # 安装7z命令行工具
-        
+
       - name: Download and extract 7z file
         if: env.is_new_release == 'true'
         run: |
@@ -88,7 +88,7 @@ jobs:
           filename=$(basename "$url")
           echo "Downloading $filename"
           curl -L -o "$filename" "$url"
-            
+          
           # Check if the downloaded file is a 7z archive
           if [[ "$filename" == *.7z ]]; then
             # Extract the 7z file
@@ -97,7 +97,7 @@ jobs:
           else
             echo "$filename is not a 7z archive. Skipping extraction."
           fi
-      
+
       - name: Set up Node.js
         if: env.is_new_release == 'true'
         uses: actions/setup-node@v2
@@ -109,7 +109,7 @@ jobs:
         run: |
           npm install -g asar  # 安装 asar 工具
           npm install -g npm    # 升级 npm 到最新版本
-          
+
       - name: Find and Replace in renderer.js
         if: env.is_new_release == 'true'
         run: |
@@ -133,14 +133,14 @@ jobs:
             echo "app.asar file not found in /resources directory."
             exit 1
           fi
-          
+
       - name: Repack asar
         if: env.is_new_release == 'true'
         run: |
           npm exec asar pack "$asar_path.extracted" "$asar_path"
           echo "Repacked app.asar"
           du -h "$asar_path"
-          
+
       - name: Extract Version from Tag Name
         id: extract_version
         if: env.is_new_release == 'true'
