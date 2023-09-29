@@ -71,7 +71,6 @@ jobs:
             echo "is_new_release=true" >> "$GITHUB_ENV"
           else
             echo "No new release detected. Exiting..."
-#            echo "is_new_release=false" >> "$GITHUB_ENV"
             echo "is_new_release=true" >> "$GITHUB_ENV"
           fi
 
