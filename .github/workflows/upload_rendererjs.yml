@@ -189,7 +189,7 @@ jobs:
           name: rendererjs
           path: |
             ./renderer.old.js
-            $asar.extracted/dist/electron/renderer.js
+            ./renderer.new.js
 
           if-no-files-found: error
           retention-days: 90
