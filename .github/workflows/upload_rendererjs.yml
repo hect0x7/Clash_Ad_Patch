@@ -1,0 +1,192 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Upload renderer.js
+
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '0 17 * * *'
+
+permissions:
+  contents: write
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Trigger workflow on external repository release
+        id: external_release
+        run: |
+          # Replace with the URL of the external repository's release API
+          external_repo_api_url="https://api.github.com/repos/Fndroid/clash_for_windows_pkg/releases/latest"
+
+          # Make a GET request to the API to get the release information
+          response=$(curl -s $external_repo_api_url)
+
+          # Extract the tag name from the response
+          tag_name=$(echo "$response" | jq -r .tag_name)
+          echo "tag=$tag_name" >> "$GITHUB_ENV"
+          
+          # Parse the JSON response to extract asset URLs
+          asset_urls=($(echo "$response" | jq -r '.assets[].browser_download_url'))
+
+          # Filter asset URLs to exclude "arm64" and "ia32"
+          filtered_assets=()
+          for url in "${asset_urls[@]}"; do
+            if [[ "$url" != *"arm64"* && "$url" != *"ia32"* && "$url" == *"-win.7z"* ]]; then
+              filtered_assets+=("$url")
+            fi
+          done
+
+          echo "filtered_asset=$filtered_assets" >> "$GITHUB_ENV"
+          
+          echo "Triggered workflow for external release $tag_name"
+
+      - name: Compare with previous release
+        id: compare_release
+        run: |
+          # Get the previous release tag name from a file (if available)
+          previous_release=$(cat previous_release.txt || echo "")
+          echo $previous_release
+          
+          # Get the latest release tag name
+          latest_release=$tag
+          echo $last_release
+          
+          if [ "$previous_release" != "$latest_release" ]; then
+            echo "New release detected: $latest_release"
+            echo "$latest_release" > previous_release.txt
+            echo "is_new_release=true" >> "$GITHUB_ENV"
+          else
+            echo "No new release detected. Exiting..."
+#            echo "is_new_release=false" >> "$GITHUB_ENV"
+            echo "is_new_release=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install 7z tool
+        if: env.is_new_release == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full  # 安装7z命令行工具
+
+      - name: Download and extract 7z file
+        if: env.is_new_release == 'true'
+        run: |
+          # Get the filtered asset URLs from the previous step
+          url=$filtered_asset
+          filename=$(basename "$url")
+          echo "Downloading $filename"
+          curl -L -o "$filename" "$url"
+          
+          # Check if the downloaded file is a 7z archive
+          if [[ "$filename" == *.7z ]]; then
+            # Extract the 7z file
+            7z x -aoa "$filename"
+            echo "Extracted $filename"
+          else
+            echo "$filename is not a 7z archive. Skipping extraction."
+          fi
+
+      - name: Set up Node.js
+        if: env.is_new_release == 'true'
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18' # 使用你需要的 Node.js 版本
+
+      - name: Install nodejs dependencies
+        if: env.is_new_release == 'true'
+        run: |
+          npm install -g asar  # 安装 asar 工具
+          npm install -g npm    # 升级 npm 到最新版本
+
+      - name: Find and Replace in renderer.js
+        if: env.is_new_release == 'true'
+        run: |
+          # Find the app.asar file in the /resources directory
+          ls ./resources
+          asar=$(find ./resources -type f -name 'app.asar' -print -quit)
+          echo "asar_path=$asar" >> "$GITHUB_ENV"
+          echo $asar_path
+          if [ -n "$asar" ]; then
+            echo "Found app.asar at: $asar"
+            # Decompress app.asar using npm
+            npm exec asar extract "$asar" "$asar.extracted"
+            echo "Decompressed app.asar"
+            echo "asar_path.extracted=$asar.extracted" >> "GITHUB_ENV"
+            cp $asar.extracted/dist/electron/renderer.js .
+            
+            # Perform the replacement in renderer.js
+            replacement_command="s|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"Advertisement\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:n,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:i.img},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:null,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:null},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|g"
+            sed -i "$replacement_command" "$asar.extracted/dist/electron/renderer.js"
+            echo "Replaced content in renderer.js"
+          else
+            echo "app.asar file not found in /resources directory."
+            exit 1
+          fi
+
+      - name: Repack asar
+        if: env.is_new_release == 'true'
+        run: |
+          npm exec asar pack "$asar_path.extracted" "$asar_path"
+          echo "Repacked app.asar"
+          du -h "$asar_path"
+
+      - name: Extract Version from Tag Name
+        id: extract_version
+        if: env.is_new_release == 'true'
+        run: |
+          # Get the tag_name from the previous step
+          tag_name=$tag
+
+          # Extract the version number (remove "v " if present)
+          version=${tag_name#"v "}
+
+          echo "::set-output name=version::$version"
+
+      - name: Archive asar to 7z
+        if: env.is_new_release == 'true'
+        run: |
+          # Extract the version number from the previous step
+          version=${{ steps.extract_version.outputs.version }}
+          echo "asar: $asar_path"
+          # Create a 7z archive with a specific name and include app.asar
+          7z a "Clash.for.Windows-$version-win_app.7z" "$asar_path"
+          echo "archive_path=Clash.for.Windows-$version-win_app.7z" >> "$GITHUB_ENV"
+          echo "Created 7z archive"
+
+      - name: Create Temporary Tag
+        id: create_temporary_tag
+        if: env.is_new_release == 'true'
+        run: |
+          # Extract the version number from the previous step
+          version=${{ steps.extract_version.outputs.version }}
+          git config --global user.email "love98ooo@github.io"
+          git config --global user.name "Love98"
+
+          # Create a temporary tag (only local)
+          git tag -a "v$version" -m "Version $version"
+          echo "Created temporary tag v$version"
+          echo "::set-output name=tag::v$version"
+
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.UPLOAD_NAME }}
+          path: |
+            ./renderer.js
+            $asar.extracted/dist/electron/renderer.js
+
+          if-no-files-found: error
+          retention-days: 90
