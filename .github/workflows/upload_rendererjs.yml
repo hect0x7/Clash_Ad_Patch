@@ -53,7 +53,6 @@ jobs:
           echo "filtered_asset=$filtered_assets" >> "$GITHUB_ENV"
           
           echo "Triggered workflow for external release $tag_name"
-
       - name: Compare with previous release
         id: compare_release
         run: |
