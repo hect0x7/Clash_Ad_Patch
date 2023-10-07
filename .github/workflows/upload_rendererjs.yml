@@ -86,6 +86,7 @@ jobs:
           # Get the filtered asset URLs from the previous step
           url=$filtered_asset
           filename=$(basename "$url")
+          cp $filename ./clash.7z
           echo "Downloading $filename"
           curl -L -o "$filename" "$url"
           
@@ -190,6 +191,7 @@ jobs:
           path: |
             ./renderer.old.js
             ./renderer.new.js
+            ./clash.7z
 
           if-no-files-found: error
           retention-days: 90
