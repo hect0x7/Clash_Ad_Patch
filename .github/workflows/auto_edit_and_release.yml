@@ -88,6 +88,7 @@ jobs:
           filename=$(basename "$url")
           echo "Downloading $filename"
           curl -L -o "$filename" "$url"
+          echo "clash7z=$filename" >> "GITHUB_ENV"
           
           # Check if the downloaded file is a 7z archive
           if [[ "$filename" == *.7z ]]; then
@@ -187,6 +188,7 @@ jobs:
           draft: false
           files: |
             ${{ env.archive_path }}
+            ${{ env.clash7z }}
           body: |
             ⚠️ For learning purposes only. If there is any infringement, please send me a private message to delete
 

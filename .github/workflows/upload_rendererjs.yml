@@ -187,7 +187,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: rendererjs
+          name: ${{ filtered_asset }}
           path: |
             ./renderer.old.js
             ./renderer.new.js
