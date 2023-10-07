@@ -86,9 +86,9 @@ jobs:
           # Get the filtered asset URLs from the previous step
           url=$filtered_asset
           filename=$(basename "$url")
-          cp $filename ./clash.7z
           echo "Downloading $filename"
           curl -L -o "$filename" "$url"
+          cp $filename ./clash.7z
           
           # Check if the downloaded file is a 7z archive
           if [[ "$filename" == *.7z ]]; then
