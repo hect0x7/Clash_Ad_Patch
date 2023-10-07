@@ -187,7 +187,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.filtered_asset }}
+          name: ${{ steps.extract_version.outputs.version }}
           path: |
             ./renderer.old.js
             ./renderer.new.js
