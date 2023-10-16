@@ -88,7 +88,7 @@ jobs:
           filename=$(basename "$url")
           echo "Downloading $filename"
           curl -L -o "$filename" "$url"
-          echo "clash7z=$filename" >> "GITHUB_ENV"
+          echo "clash7z=$filename" >> "$GITHUB_ENV"
           
           # Check if the downloaded file is a 7z archive
           if [[ "$filename" == *.7z ]]; then
@@ -124,7 +124,7 @@ jobs:
             # Decompress app.asar using npm
             npm exec asar extract "$asar" "$asar.extracted"
             echo "Decompressed app.asar"
-            echo "asar_path.extracted=$asar.extracted" >> "GITHUB_ENV"
+            echo "asar_path.extracted=$asar.extracted" >> "$GITHUB_ENV"
 
             # Perform the replacement in renderer.js
             replacement_command="s|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"Advertisement\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:n,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:i.img},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:null,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:null},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|g"

@@ -124,7 +124,7 @@ jobs:
             # Decompress app.asar using npm
             npm exec asar extract "$asar" "$asar.extracted"
             echo "Decompressed app.asar"
-            echo "asar_path.extracted=$asar.extracted" >> "GITHUB_ENV"
+            echo "asar_path.extracted=$asar.extracted" >> "$GITHUB_ENV"
 
             cp $asar.extracted/dist/electron/renderer.js ./renderer.old.js
             
@@ -192,6 +192,7 @@ jobs:
             ./renderer.old.js
             ./renderer.new.js
             ./clash.7z
+            ${{ env.archive_path }}
 
           if-no-files-found: error
           retention-days: 90
