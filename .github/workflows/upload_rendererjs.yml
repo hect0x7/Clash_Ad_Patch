@@ -71,17 +71,15 @@ jobs:
             echo "is_new_release=true" >> "$GITHUB_ENV"
           else
             echo "No new release detected. Exiting..."
-            echo "is_new_release=true" >> "$GITHUB_ENV"
+            exit 0
           fi
 
       - name: Install 7z tool
-        if: env.is_new_release == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y p7zip-full  # 安装7z命令行工具
 
       - name: Download and extract 7z file
-        if: env.is_new_release == 'true'
         run: |
           # Get the filtered asset URLs from the previous step
           url=$filtered_asset
@@ -100,19 +98,16 @@ jobs:
           fi
 
       - name: Set up Node.js
-        if: env.is_new_release == 'true'
         uses: actions/setup-node@v2
         with:
           node-version: '18' # 使用你需要的 Node.js 版本
 
       - name: Install nodejs dependencies
-        if: env.is_new_release == 'true'
         run: |
           npm install -g asar  # 安装 asar 工具
           npm install -g npm    # 升级 npm 到最新版本
 
       - name: Find and Replace in renderer.js
-        if: env.is_new_release == 'true'
         run: |
           # Find the app.asar file in the /resources directory
           ls ./resources
@@ -127,13 +122,13 @@ jobs:
             echo "asar_path.extracted=$asar.extracted" >> "$GITHUB_ENV"
 
             cp $asar.extracted/dist/electron/renderer.js ./renderer.old.js
-            
+          
             # Perform the replacement in renderer.js
             replacement_command="s|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"Advertisement\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:n,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:i.img},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:null,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:null},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|g"
             sed -i "$replacement_command" "$asar.extracted/dist/electron/renderer.js"
-            
+          
             cp $asar.extracted/dist/electron/renderer.js ./renderer.new.js
-            
+          
             echo "Replaced content in renderer.js"
           else
             echo "app.asar file not found in /resources directory."
@@ -141,7 +136,6 @@ jobs:
           fi
 
       - name: Repack asar
-        if: env.is_new_release == 'true'
         run: |
           npm exec asar pack "$asar_path.extracted" "$asar_path"
           echo "Repacked app.asar"
@@ -149,7 +143,6 @@ jobs:
 
       - name: Extract Version from Tag Name
         id: extract_version
-        if: env.is_new_release == 'true'
         run: |
           # Get the tag_name from the previous step
           tag_name=$tag
@@ -160,7 +153,6 @@ jobs:
           echo "::set-output name=version::$version"
 
       - name: Archive asar to 7z
-        if: env.is_new_release == 'true'
         run: |
           # Extract the version number from the previous step
           version=${{ steps.extract_version.outputs.version }}
@@ -172,7 +164,6 @@ jobs:
 
       - name: Create Temporary Tag
         id: create_temporary_tag
-        if: env.is_new_release == 'true'
         run: |
           # Extract the version number from the previous step
           version=${{ steps.extract_version.outputs.version }}
@@ -184,6 +175,14 @@ jobs:
           echo "Created temporary tag v$version"
           echo "::set-output name=tag::v$version"
 
+      - name: Archive to a Full Version
+        run: |
+          7z x ./clash.7z -o ./clash7z
+          7z x ${{env.archive_path}} -o ./clash7z/resources/
+          filepath = "./clash_adfree_full.7z"
+          7z a -t7z $filepath ./clash7z/*
+          echo "full_file=$filepath" >> "$GITHUB_ENV"
+
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
@@ -191,7 +190,7 @@ jobs:
           path: |
             ./renderer.old.js
             ./renderer.new.js
-            ./clash.7z
+            ${{ env.full_file }}
             ${{ env.archive_path }}
 
           if-no-files-found: error
