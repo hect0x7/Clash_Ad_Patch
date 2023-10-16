@@ -177,8 +177,8 @@ jobs:
 
       - name: Archive to a Full Version
         run: |
-          7z x ./clash.7z -o ./clash7z
-          7z x ${{env.archive_path}} -o ./clash7z/resources/
+          7z x ./clash.7z -o./clash7z
+          7z x ${{env.archive_path}} -o./clash7z/resources/
           filepath = "./clash_adfree_full.7z"
           7z a -t7z $filepath ./clash7z/*
           echo "full_file=$filepath" >> "$GITHUB_ENV"
