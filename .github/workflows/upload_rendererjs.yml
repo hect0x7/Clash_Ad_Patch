@@ -71,7 +71,6 @@ jobs:
           else
             echo "No new release detected. Exiting..."
             echo "is_new_release=false" >> "$GITHUB_OUTPUT"
-            exit 1
           fi
 
 
