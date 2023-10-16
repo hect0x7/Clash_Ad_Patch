@@ -5,9 +5,9 @@ name: Auto Edit and Release
 # Controls when the workflow will run
 on:
   workflow_dispatch:
-#  push:
-#    branches:
-#      - master
+  #  push:
+  #    branches:
+  #      - master
   schedule:
     - cron: '0 17 * * *'
 
@@ -68,12 +68,17 @@ jobs:
           if [ "$previous_release" != "$latest_release" ]; then
             echo "New release detected: $latest_release"
             echo "$latest_release" > previous_release.txt
-            echo "is_new_release=true" >> "$GITHUB_ENV"
+            echo "is_new_release=true" >> "$GITHUB_OUTPUT"
           else
             echo "No new release detected. Exiting..."
-            echo "is_new_release=false" >> "$GITHUB_ENV"
+            echo "is_new_release=false" >> "$GITHUB_OUTPUT"
           fi
 
+  work:
+    runs-on: ubuntu-latest
+    needs: check
+    if: ${{ needs.check.outputs.compare_release == 'false' }}
+    steps:
       - name: Install 7z tool
         if: env.is_new_release == 'true'
         run: |
@@ -125,7 +130,7 @@ jobs:
             npm exec asar extract "$asar" "$asar.extracted"
             echo "Decompressed app.asar"
             echo "asar_path.extracted=$asar.extracted" >> "$GITHUB_ENV"
-
+          
             # Perform the replacement in renderer.js
             replacement_command="s|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"Advertisement\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:n,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:i.img},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|\\[t(\"div\",{staticClass:\"title\"},\\[e._v(\"\")\\]),e._v(\" \"),t(\"div\",{staticClass:\"ad-img-list\"},e._l(e.adImages,(function(i,n){return t(\"div\",{key:null,staticClass:\"ad-img\"},\\[t(\"lazy-image-view\",{attrs:{clickalbe:i.click,src:null},on:{click:function(t){return e.adClick(n)}}})\\],1)})),0)\\]|g"
             sed -i "$replacement_command" "$asar.extracted/dist/electron/renderer.js"
@@ -148,10 +153,10 @@ jobs:
         run: |
           # Get the tag_name from the previous step
           tag_name=$tag
-
+          
           # Extract the version number (remove "v " if present)
           version=${tag_name#"v "}
-
+          
           echo "::set-output name=version::$version"
 
       - name: Archive asar to 7z
@@ -173,7 +178,7 @@ jobs:
           version=${{ steps.extract_version.outputs.version }}
           git config --global user.email "love98ooo@github.io"
           git config --global user.name "Love98"
-
+          
           # Create a temporary tag (only local)
           git tag -a "v$version" -m "Version $version"
           echo "Created temporary tag v$version"
@@ -199,7 +204,7 @@ jobs:
             ${{ env.full_file }}
           body: |
             ⚠️ For learning purposes only. If there is any infringement, please send me a private message to delete
-
+            
             # How to use it:
             1. Quit your Clash first
             2. Download Clash.for.Windows-0.xx.xx-win_app.7z
@@ -214,4 +219,4 @@ jobs:
           git commit -m "update release.txt"
           git push
           echo "finished"
-          
+
