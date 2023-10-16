@@ -88,7 +88,7 @@ jobs:
           filename=$(basename "$url")
           echo "Downloading $filename"
           curl -L -o "$filename" "$url"
-          echo "clash7z=$filename" >> "$GITHUB_ENV"
+          cp $filename ./clash.7z
           
           # Check if the downloaded file is a 7z archive
           if [[ "$filename" == *.7z ]]; then
@@ -179,6 +179,14 @@ jobs:
           echo "Created temporary tag v$version"
           echo "::set-output name=tag::v$version"
 
+      - name: Archive to a Full Version
+        run: |
+          7z x ./clash.7z -o./clash7z
+          7z x ${{env.archive_path}} -aoa -o./clash7z/resources/
+          filepath="./clash_adfree_full.7z"
+          7z a -t7z "$filepath" ./clash7z/*
+          echo "full_file=$filepath" >> "$GITHUB_ENV"
+
       - name: Release
         uses: softprops/action-gh-release@v1
         if: env.is_new_release == 'true'
@@ -188,7 +196,7 @@ jobs:
           draft: false
           files: |
             ${{ env.archive_path }}
-            ${{ env.clash7z }}
+            ${{ env.full_file }}
           body: |
             ⚠️ For learning purposes only. If there is any infringement, please send me a private message to delete
 
@@ -197,6 +205,7 @@ jobs:
             2. Download Clash.for.Windows-0.xx.xx-win_app.7z
             3. Unzip Clash.for.Windows-0.xx.xx-win.7z
             4. Replace Clash for Clash\resources\app.asar with the new app.asar
+
       - name: Update previous_release.txt
         if: env.is_new_release == 'true'
         run: |

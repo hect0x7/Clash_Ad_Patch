@@ -71,7 +71,7 @@ jobs:
             echo "is_new_release=true" >> "$GITHUB_ENV"
           else
             echo "No new release detected. Exiting..."
-            exit 0
+            exit 1
           fi
 
       - name: Install 7z tool
