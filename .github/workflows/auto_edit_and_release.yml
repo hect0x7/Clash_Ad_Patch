@@ -37,6 +37,7 @@ jobs:
           # Extract the tag name from the response
           tag_name=$(echo "$response" | jq -r .tag_name)
           echo "tag=$tag_name" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag_name" >> "$GITHUB_ENV"
           
           # Parse the JSON response to extract asset URLs
           asset_urls=($(echo "$response" | jq -r '.assets[].browser_download_url'))
@@ -58,11 +59,11 @@ jobs:
         run: |
           # Get the previous release tag name from a file (if available)
           previous_release=$(cat previous_release.txt || echo "")
-          echo $previous_release
+          echo "pre: $previous_release"
           
           # Get the latest release tag name
-          latest_release=$tag_name
-          echo $last_release
+          latest_release=$tag
+          echo "latest: $last_release"
           
           if [ "$previous_release" != "$latest_release" ]; then
             echo "New release detected: $latest_release"
