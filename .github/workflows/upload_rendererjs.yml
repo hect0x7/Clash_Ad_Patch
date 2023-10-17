@@ -81,6 +81,8 @@ jobs:
       tag: ${{  needs.check.outputs.outputs.tag }}
       filtered_asset: ${{  needs.check.outputs.filtered_asset }}
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
       - name: Install 7z tool
         run: |
           sudo apt-get update
