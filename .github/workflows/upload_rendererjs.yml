@@ -78,7 +78,7 @@ jobs:
     needs: check
     if: ${{ needs.check.outputs.is_new_release == 'true' }}
     env:
-      tag: ${{  needs.check.outputs.outputs.tag }}
+      tag: ${{  needs.check.outputs.tag }}
       filtered_asset: ${{  needs.check.outputs.filtered_asset }}
     steps:
       - name: Check out repository
