@@ -63,8 +63,7 @@ jobs:
           
           # Get the latest release tag name
           latest_release=$tag
-          echo "latest: $last_release"
-          echo "latest: $tag"
+          echo "latest: $latest_release"
           
           if [ "$previous_release" != "$latest_release" ]; then
             echo "New release detected: $latest_release"
