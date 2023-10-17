@@ -76,7 +76,7 @@ jobs:
   work:
     runs-on: ubuntu-latest
     needs: check
-    if: ${{ needs.check.outputs.compare_release == 'false' }}
+    if: ${{ needs.check.outputs.compare_release.is_new_release == 'false' }}
     steps:
       - name: Install 7z tool
         run: |
