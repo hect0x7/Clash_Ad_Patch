@@ -19,11 +19,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
+      tag: ${{ steps.external_release.outputs.tag }}
+      filtered_asset: ${{ steps.external_release.outputs.filtered_asset }}
       is_new_release: ${{ steps.compare_release.outputs.is_new_release }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
-
       - name: Trigger workflow on external repository release
         id: external_release
         run: |
@@ -35,7 +36,7 @@ jobs:
 
           # Extract the tag name from the response
           tag_name=$(echo "$response" | jq -r .tag_name)
-          echo "tag=$tag_name" >> "$GITHUB_ENV"
+          echo "tag=$tag_name" >> "$GITHUB_OUTPUT"
           
           # Parse the JSON response to extract asset URLs
           asset_urls=($(echo "$response" | jq -r '.assets[].browser_download_url'))
@@ -48,7 +49,7 @@ jobs:
             fi
           done
 
-          echo "filtered_asset=$filtered_assets" >> "$GITHUB_ENV"
+          echo "filtered_asset=$filtered_assets" >> "$GITHUB_OUTPUT"
           
           echo "Triggered workflow for external release $tag_name"
 
@@ -76,6 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     if: ${{ needs.check.outputs.is_new_release == 'true' }}
+    env:
+      tag: ${{  needs.check.outputs.outputs.tag }}
+      filtered_asset: ${{  needs.check.outputs.filtered_asset }}
     steps:
       - name: Install 7z tool
         if: env.is_new_release == 'true'
