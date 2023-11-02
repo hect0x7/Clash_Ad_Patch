@@ -66,7 +66,7 @@ jobs:
           latest_release=$tag
           echo "latest: $latest_release"
           
-          if [[ -z $latest_release ]]; then
+          if [[ "$latest_release" == "null" ]]; then
             exit 0
           fi
           
