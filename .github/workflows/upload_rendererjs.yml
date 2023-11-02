@@ -66,6 +66,10 @@ jobs:
           latest_release=$tag
           echo "latest: $latest_release"
           
+          if [[ -z $latest_release ]]; then
+            exit 0
+          fi
+          
           if [ "$previous_release" != "$latest_release" ]; then
             echo "New release detected: $latest_release"
             echo "$latest_release" > previous_release.txt
