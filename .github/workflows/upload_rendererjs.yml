@@ -5,11 +5,11 @@ name: Upload renderer.js
 # Controls when the workflow will run
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-  schedule:
-    - cron: '0 17 * * *'
+  # push:
+  #   branches:
+  #     - master
+  # schedule:
+  #   - cron: '0 17 * * *'
 
 permissions:
   contents: write
